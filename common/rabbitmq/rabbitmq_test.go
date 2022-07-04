@@ -6,6 +6,8 @@ package rabbitmq
 
 import (
 	"encoding/json"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"log"
 	"testing"
 )
 
@@ -93,4 +95,81 @@ func TestSend(t *testing.T) {
 	if actual != expect2 {
 		t.Errorf("expected %s, actual %s", expect2, actual)
 	}
+}
+
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Panicf("%s: %s", err, msg)
+	}
+}
+
+func sendHello() {
+	conn, err := amqp.Dial(host)
+	failOnError(err, "send Failed to connect to RabbitMQ")
+	defer func(conn *amqp.Connection) {
+		err := conn.Close()
+		if err != nil {
+			failOnError(err, "send Failed to close RabbitMQ")
+		}
+	}(conn)
+
+	ch, err := conn.Channel()
+	failOnError(err, "send Failed to open a channel")
+	defer func(ch *amqp.Channel) {
+		err := ch.Close()
+		if err != nil {
+			failOnError(err, "send Failed to close a channel")
+		}
+	}(ch)
+
+	q, err := ch.QueueDeclare("hello", false, false, false, false, nil)
+	failOnError(err, "send Failed to declare a queue")
+	body := "Hello World"
+	err = ch.Publish("", q.Name, false, false, amqp.Publishing{ContentType: "text/plain", Body: []byte(body)})
+	err = ch.Publish("", q.Name, false, false, amqp.Publishing{ContentType: "text/plain", Body: []byte("hell01")})
+	err = ch.Publish("", q.Name, false, false, amqp.Publishing{ContentType: "text/plain", Body: []byte("hell01")})
+	err = ch.Publish("", q.Name, false, false, amqp.Publishing{ContentType: "text/plain", Body: []byte("hell01")})
+	err = ch.Publish("", q.Name, false, false, amqp.Publishing{ContentType: "text/plain", Body: []byte("hell01")})
+
+	failOnError(err, "send Failed to publish a msg")
+	log.Printf("[x] Sent %s\n", body)
+}
+
+func recvHello() {
+	conn, err := amqp.Dial(host)
+	failOnError(err, "recv Failed to connect to RabbitMQ")
+	defer func(conn *amqp.Connection) {
+		err := conn.Close()
+		if err != nil {
+			failOnError(err, "recv Failed to close RabbitMQ")
+		}
+	}(conn)
+
+	ch, err := conn.Channel()
+	failOnError(err, "recv Failed to open a channel")
+	defer func(ch *amqp.Channel) {
+		err := ch.Close()
+		if err != nil {
+			failOnError(err, "recv Failed to close a channel")
+		}
+	}(ch)
+
+	q, err := ch.QueueDeclare("hello", false, false, false, false, nil)
+	failOnError(err, "recv Failed to declare a queue")
+
+	msgs, err := ch.Consume(q.Name, "", true, false, false, false, nil)
+	failOnError(err, "recv Failed to register a consumer")
+	var forever chan struct{}
+	go func() {
+		for d := range msgs {
+			log.Printf("Recv a message: %s", d.Body)
+		}
+	}()
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	<-forever
+}
+
+func TestHelloSendRecv(t *testing.T) {
+	sendHello()
+	recvHello()
 }

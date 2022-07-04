@@ -7,4 +7,5 @@ use (
 	./chapterTwoApiServer
 	./chapterTwoDataServer
 	./common
+	./rabbit
 )
