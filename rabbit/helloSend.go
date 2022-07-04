@@ -9,22 +9,14 @@ import (
 	"log"
 )
 
-const host = "amqp://root:123456@192.168.202.158:5672"
-
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Panicf("%s: %s", msg, err)
-	}
-}
-
 func main() {
 	conn, err := amqp.Dial(host)
 	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
+	defer func() { _ = ch.Close() }()
 
 	q, err := ch.QueueDeclare(
 		"hello", // name
