@@ -44,14 +44,14 @@ func getMetadata(name string, versionId int) (meta Metadata, e error) {
 		return
 	}
 	result, _ := ioutil.ReadAll(r.Body)
-	json.Unmarshal(result, &meta)
+	_ = json.Unmarshal(result, &meta)
 	return
 }
 
 func SearchLatestVersion(name string) (meta Metadata, e error) {
-	url := fmt.Sprintf("http://%s/metadata/_search?q=name:%s&size=1&sort=version:desc",
+	u := fmt.Sprintf("http://%s/metadata/_search?q=name:%s&size=1&sort=version:desc",
 		os.Getenv("ES_SERVER"), url.PathEscape(name))
-	r, e := http.Get(url)
+	r, e := http.Get(u)
 	if e != nil {
 		return
 	}
@@ -61,7 +61,7 @@ func SearchLatestVersion(name string) (meta Metadata, e error) {
 	}
 	result, _ := ioutil.ReadAll(r.Body)
 	var sr searchResult
-	json.Unmarshal(result, &sr)
+	_ = json.Unmarshal(result, &sr)
 	if len(sr.Hits.Hits) != 0 {
 		meta = sr.Hits.Hits[0].Source
 	}
@@ -79,9 +79,9 @@ func PutMetadata(name string, version int, size int64, hash string) error {
 	doc := fmt.Sprintf(`{"name":"%s","version":%d,"size":%d,"hash":"%s"}`,
 		name, version, size, hash)
 	client := http.Client{}
-	url := fmt.Sprintf("http://%s/metadata/objects/%s_%d?op_type=create",
+	u := fmt.Sprintf("http://%s/metadata/objects/%s_%d?op_type=create",
 		os.Getenv("ES_SERVER"), name, version)
-	request, _ := http.NewRequest("PUT", url, strings.NewReader(doc))
+	request, _ := http.NewRequest("PUT", u, strings.NewReader(doc))
 	r, e := client.Do(request)
 	if e != nil {
 		return e
@@ -105,19 +105,19 @@ func AddVersion(name, hash string, size int64) error {
 }
 
 func SearchAllVersions(name string, from, size int) ([]Metadata, error) {
-	url := fmt.Sprintf("http://%s/metadata/_search?sort=name,version&from=%d&size=%d",
+	u := fmt.Sprintf("http://%s/metadata/_search?sort=name,version&from=%d&size=%d",
 		os.Getenv("ES_SERVER"), from, size)
 	if name != "" {
-		url += "&q=name:" + name
+		u += "&q=name:" + name
 	}
-	r, e := http.Get(url)
+	r, e := http.Get(u)
 	if e != nil {
 		return nil, e
 	}
 	metas := make([]Metadata, 0)
 	result, _ := ioutil.ReadAll(r.Body)
 	var sr searchResult
-	json.Unmarshal(result, &sr)
+	_ = json.Unmarshal(result, &sr)
 	for i := range sr.Hits.Hits {
 		metas = append(metas, sr.Hits.Hits[i].Source)
 	}
@@ -126,10 +126,10 @@ func SearchAllVersions(name string, from, size int) ([]Metadata, error) {
 
 func DelMetadata(name string, version int) {
 	client := http.Client{}
-	url := fmt.Sprintf("http://%s/metadata/objects/%s_%d",
+	u := fmt.Sprintf("http://%s/metadata/objects/%s_%d",
 		os.Getenv("ES_SERVER"), name, version)
-	request, _ := http.NewRequest("DELETE", url, nil)
-	client.Do(request)
+	request, _ := http.NewRequest("DELETE", u, nil)
+	_, _ = client.Do(request)
 }
 
 type Bucket struct {
@@ -177,7 +177,7 @@ func SearchVersionStatus(minDocCount int) ([]Bucket, error) {
 	}
 	b, _ := ioutil.ReadAll(r.Body)
 	var ar aggregateResult
-	json.Unmarshal(b, &ar)
+	_ = json.Unmarshal(b, &ar)
 	return ar.Aggregations.Group_by_name.Buckets, nil
 }
 
@@ -189,7 +189,7 @@ func HasHash(hash string) (bool, error) {
 	}
 	b, _ := ioutil.ReadAll(r.Body)
 	var sr searchResult
-	json.Unmarshal(b, &sr)
+	_ = json.Unmarshal(b, &sr)
 	return sr.Hits.Total != 0, nil
 }
 
@@ -206,7 +206,7 @@ func SearchHashSize(hash string) (size int64, e error) {
 	}
 	result, _ := ioutil.ReadAll(r.Body)
 	var sr searchResult
-	json.Unmarshal(result, &sr)
+	_ = json.Unmarshal(result, &sr)
 	if len(sr.Hits.Hits) != 0 {
 		size = sr.Hits.Hits[0].Source.Size
 	}
