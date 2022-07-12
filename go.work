@@ -1,7 +1,15 @@
 go 1.18
 
 use (
+	./chapterFiveApiServer
+	./chapterFiveDataServer
+	./chapterFourApiServer
+	./chapterFourDataServer
 	./chapterOne
+	./chapterSevenApiServer
+	./chapterSevenDataServer
+	./chapterSixApiServer
+	./chapterSixDataServer
 	./chapterThreeApiServer
 	./chapterThreeDataServer
 	./chapterTwoApiServer
