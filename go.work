@@ -1,6 +1,8 @@
 go 1.18
 
 use (
+	./chapterEightApiServer
+	./chapterEightDataServer
 	./chapterFiveApiServer
 	./chapterFiveDataServer
 	./chapterFourApiServer
